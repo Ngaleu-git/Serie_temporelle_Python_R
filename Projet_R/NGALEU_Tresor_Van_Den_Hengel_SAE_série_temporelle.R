@@ -187,56 +187,77 @@ res_futur <- pred_arma$pred # On récupère uniquement la valeur prédite
 # Pourquoi y_total ? Parce que c'est la combinaison de toute notre analyse
 y_total_futur <- y_det_futur + res_futur
 
+# =========================================================================
+# INTERVALLE DE CONFIANCE À 95 %
+# =========================================================================
+
+# Ecart-type des résidus du modèle total
+sigma <- sd(y - y_total)
+
+# Coefficient pour un IC à 95 %
+alpha <- 1.96
+
+# Bornes de l'intervalle de confiance
+ic_inf <- y_total_futur - alpha * sigma
+ic_sup <- y_total_futur + alpha * sigma
+
+
 # On arrondit les valeurs pour un affichage propre
 y_labels <- round(y_total_futur, 0)
 
-# --- GRAPHIQUE FINAL ---
-par(mar=c(5, 5, 4, 2)) 
+# ================================
+# GRAPHIQUE  
+# ================================
 
-# Tracé de la série historique
-plot(t, y, type="l", lwd=2, col="steelblue",
-     xlim=c(1, n + h), 
-     ylim=c(min(y)*0.9, max(c(y, y_total_futur))*1.1),
+graphics.off()
+par(mfrow=c(1,1))
+par(mar=c(5,5,4,2))
+
+plot(t, y,
+     type="l",
+     lwd=2,
+     col="steelblue",
+     xlim=c(1, n + h),
+     ylim=c(min(c(y, ic_inf)) * 0.9,
+            max(c(y, ic_sup)) * 1.1),
      main="Analyse et Prévision des Ventes de Voitures pour l'année à venir",
-     xlab="Temps (Mois)", 
+     xlab="Temps (Mois)",
      ylab="Volume des Ventes",
-     frame.plot=FALSE, # Design plus moderne
-     axes=FALSE)      # On va dessiner les axes nous-mêmes
+     frame.plot=FALSE,
+     axes=FALSE)
 
-# Ajout des axes personnalisés
-axis(1, at=seq(0, n+h, by=12)) # Un repère tous les ans
+# Axes + grille 
+axis(1, at=seq(0, n + h, by=12)) 
 axis(2)
-grid(col="lightgray", lty="dotted") # Ajout d'une grille pour la lecture
+grid(col="lightgray", lty="dotted")
 
-#  Ajout de la prévision
-# On utilise une couleur rouge vif pour bien séparer du passé
-lines(t_futur, y_total_futur, col="firebrick3", type="b", pch=19, cex=0.8, lwd=2)
+# IC 95 % (discrets)
+polygon(
+  c(t_futur, rev(t_futur)),
+  c(ic_inf, rev(ic_sup)),
+  col = rgb(0.7, 0.7, 0.7, 0.35),
+  border = NA
+)
 
-# AJOUT DES VALEURS SUR LE GRAPHIQUE
-# pos=3 : place le texte au-dessus du point
-# offset=0.8 : décale légèrement le texte
-# cex=0.8 : taille du texte
-# font=2 : texte en gras
-pos_labels <- ifelse(seq_along(y_total_futur) %% 2 == 0, 3, 1)
+# Prévision
+lines(t_futur, y_total_futur,
+      col="firebrick3",
+      lwd=2,
+      type="o",
+      pch=19)
 
-text(t_futur, y_total_futur,
-     labels = y_labels,
-     pos = pos_labels,
-     offset = 0.8,
-     cex = 0.75,
-     col = "firebrick3",
-     font = 2)
+# Séparation passé / futur
+abline(v=n, col="black", lty=2, lwd=1.5)
+text(n, max(y)*1.05, "Début prévision", pos=2, cex=0.8)
 
-# Ajout d'une ligne de séparation "Passé / Futur"
-abline(v = n, col="black", lty=2, lwd=1.5)
-text(n, max(y), "Début Prévision", pos=2, cex=0.8, font=2)
-
-# 6. Ajout d'une légende complète
-legend("topleft", 
-       legend=c("Ventes Observées (Historique)", "Prévisions Modèle SAE"),
-       col=c("steelblue", "firebrick3"), 
-       lwd=2, 
-       pch=c(NA, 19), 
-       bty="n", # Pas de cadre autour de la légende
+# Légende 
+legend("topleft",
+       legend=c("Ventes observées",
+                "Prévisions",
+                "IC à 95 %"),
+       col=c("steelblue", "firebrick3", "gray"),
+       lwd=c(2,2,10),
+       pch=c(NA,19,15),
+       pt.cex=1,
+       bty="n",
        cex=0.9)
-
